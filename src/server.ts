@@ -6,6 +6,7 @@ import path from 'path';
 import http from 'http';
 import https from 'https';
 import cors from 'cors';
+import tls from 'tls';
 
 const app = express();
 const HTTP_PORT = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT) : 8080;
@@ -13,9 +14,31 @@ const HTTPS_PORT = process.env.HTTPS_PORT ? parseInt(process.env.HTTPS_PORT) : 3
 const HOST = '0.0.0.0';
 
 // SSL证书配置
-const sslOptions = {
+const sslOptions: https.ServerOptions = {
     key: fs.readFileSync(path.join(__dirname, '../ssl/private.key')),
-    cert: fs.readFileSync(path.join(__dirname, '../ssl/certificate.crt'))
+    cert: fs.readFileSync(path.join(__dirname, '../ssl/certificate.crt')),
+    minVersion: 'TLSv1.2' as const,
+    ciphers: [
+        'ECDHE-ECDSA-AES128-GCM-SHA256',
+        'ECDHE-RSA-AES128-GCM-SHA256',
+        'ECDHE-ECDSA-AES256-GCM-SHA384',
+        'ECDHE-RSA-AES256-GCM-SHA384',
+        'ECDHE-ECDSA-CHACHA20-POLY1305',
+        'ECDHE-RSA-CHACHA20-POLY1305',
+        'DHE-RSA-AES128-GCM-SHA256',
+        'DHE-RSA-AES256-GCM-SHA384',
+        'AES128-GCM-SHA256',
+        'AES256-GCM-SHA384',
+        'AES128-SHA256',
+        'AES256-SHA256',
+        'AES128-SHA',
+        'AES256-SHA'
+    ].join(':'),
+    honorCipherOrder: true,
+    handshakeTimeout: 120000,
+    requestCert: false,
+    rejectUnauthorized: false,
+    enableTrace: true,
 };
 
 // 创建日志目录
@@ -139,13 +162,48 @@ app.get('/health', (req, res) => {
 
 // 创建 HTTP 和 HTTPS 服务器
 const httpServer = http.createServer(app);
-const httpsServer = https.createServer(sslOptions, app);
+
+function startHttpsServer(retries = 3) {
+    const httpsServer = https.createServer(sslOptions, app);
+    
+    httpsServer.on('secureConnection', (tlsSocket) => {
+        console.log('安全连接已建立');
+        console.log('TLS 版本:', tlsSocket.getProtocol());
+        console.log('加密套件:', tlsSocket.getCipher());
+    });
+
+    httpsServer.on('tlsClientError', (err, tlsSocket) => {
+        console.error('TLS 客户端错误:', err);
+        console.error('远程地址:', tlsSocket.remoteAddress);
+        console.error('远程端口:', tlsSocket.remotePort);
+    });
+
+    httpsServer.on('clientError', (err, socket) => {
+        console.error('客户端错误:', err);
+    });
+
+    httpsServer.listen(HTTPS_PORT, HOST, () => {
+        console.log(`HTTPS 反向代理服务器运行在 https://${HOST}:${HTTPS_PORT}`);
+        console.log('SSL 配置:');
+        console.log('- TLS 最低版本:', sslOptions.minVersion);
+        console.log('- 支持的加密套件:', sslOptions.ciphers?.split(':'));
+    });
+
+    return httpsServer;
+}
 
 // 启动服务器
 httpServer.listen(HTTP_PORT, HOST, () => {
     console.log(`HTTP 反向代理服务器运行在 http://${HOST}:${HTTP_PORT}`);
 });
 
-httpsServer.listen(HTTPS_PORT, HOST, () => {
-    console.log(`HTTPS 反向代理服务器运行在 https://${HOST}:${HTTPS_PORT}`);
+const httpsServer = startHttpsServer();
+
+// 在 HTTPS 服务器启动时添加错误处理
+httpsServer.on('error', (err) => {
+    console.error('HTTPS 服务器错误:', err);
+});
+
+httpsServer.on('tlsClientError', (err, tlsSocket) => {
+    console.error('TLS 客户端错误:', err);
 }); 
