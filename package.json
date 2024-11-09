@@ -8,7 +8,8 @@
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "generate-cert": "bash scripts/generate-cert.sh",
-    "setup-ssl": "bash scripts/setup-letsencrypt.sh"
+    "setup-ssl": "bash scripts/setup-letsencrypt.sh",
+    "setup-firewall": "bash scripts/setup-firewall.sh"
   },
   "keywords": [
     "proxy",

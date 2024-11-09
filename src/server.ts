@@ -10,6 +10,7 @@ import cors from 'cors';
 const app = express();
 const HTTP_PORT = 8888;
 const HTTPS_PORT = 8443;
+const HOST = '0.0.0.0';
 
 // SSL证书配置
 const sslOptions = {
@@ -135,10 +136,10 @@ const httpServer = http.createServer(app);
 const httpsServer = https.createServer(sslOptions, app);
 
 // 启动服务器
-httpServer.listen(HTTP_PORT, () => {
-    console.log(`HTTP 反向代理服务器运行在 http://localhost:${HTTP_PORT}`);
+httpServer.listen(HTTP_PORT, HOST, () => {
+    console.log(`HTTP 反向代理服务器运行在 http://${HOST}:${HTTP_PORT}`);
 });
 
-httpsServer.listen(HTTPS_PORT, () => {
-    console.log(`HTTPS 反向代理服务器运行在 https://localhost:${HTTPS_PORT}`);
+httpsServer.listen(HTTPS_PORT, HOST, () => {
+    console.log(`HTTPS 反向代理服务器运行在 https://${HOST}:${HTTPS_PORT}`);
 }); 
