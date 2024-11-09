@@ -71,27 +71,41 @@ sudo certbot certonly --standalone \
         exit 1
     }
 
-# 检查证书文件是否存在
-if [ ! -f "/etc/letsencrypt/live/$DOMAIN/privkey.pem" ] || [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
-    echo "证书文件未生成，获取证书失败"
+# 使用 ls 命令检查证书目录
+echo "检查证书目录..."
+sudo ls -la "/etc/letsencrypt/live/$DOMAIN/" || {
+    echo "无法访问证书目录，可能是权限问题"
+    exit 1
+}
+
+# 检查证书文件是否存在并且可读
+CERT_PATH="/etc/letsencrypt/live/$DOMAIN"
+if sudo test -r "$CERT_PATH/privkey.pem" && sudo test -r "$CERT_PATH/fullchain.pem"; then
+    echo "找到证书文件..."
+else
+    echo "证书文件不存在或无法读取"
+    echo "请检查目录: $CERT_PATH"
+    echo "并确保当前用户有权限访问"
     exit 1
 fi
 
 # 复制证书到项目目录
 echo "正在复制证书..."
-sudo cp "/etc/letsencrypt/live/$DOMAIN/privkey.pem" ssl/private.key || {
+sudo cp "$CERT_PATH/privkey.pem" ssl/private.key || {
     echo "复制私钥失败"
     exit 1
 }
-sudo cp "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ssl/certificate.crt || {
+sudo cp "$CERT_PATH/fullchain.pem" ssl/certificate.crt || {
     echo "复制证书失败"
     exit 1
 }
 
 # 设置适当的权限
 echo "设置文件权限..."
-sudo chown $(whoami) ssl/private.key ssl/certificate.crt || {
+CURRENT_USER=$(whoami)
+sudo chown $CURRENT_USER:$CURRENT_USER ssl/private.key ssl/certificate.crt || {
     echo "修改所有者失败"
+    echo "当前用户: $CURRENT_USER"
     exit 1
 }
 chmod 600 ssl/private.key ssl/certificate.crt || {
@@ -108,3 +122,8 @@ echo "请确保："
 echo "1. 在防火墙中开放了 80 端口（用于证书验证）"
 echo "2. 在防火墙中开放了 8443 端口（用于 HTTPS）"
 echo "3. 域名 $DOMAIN 已正确解析到本服务器"
+
+# 显示证书信息
+echo ""
+echo "证书信息："
+openssl x509 -in ssl/certificate.crt -text -noout | grep -E "Subject:|Issuer:|Not Before:|Not After :|DNS:"
