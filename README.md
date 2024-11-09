@@ -2,6 +2,10 @@
 
 一个使用 TypeScript 和 Node.js 实现的反向代理服务器，将 `/v1` 路径的请求转发到指定的目标服务器。
 
+当时写这个目的是为了在cursor上使用，但是发现cursor对于claude开头的model会绕开自定义代理，所以我想手写个反向代理，在那边设个假名model传过来，这边再转为真实model名字。
+
+结果后来访问卖家才知道，卖家已经支持了cursor，只需要在https://chat.cloudapi.vip 里面找到以cursor开头的model，使用它们即可
+
 注意：当前项目卡在https上，没有成功
 
 ## 功能特点
