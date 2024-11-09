@@ -7,6 +7,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
+    "dev:custom-ports": "HTTP_PORT=3000 HTTPS_PORT=3443 ts-node src/server.ts",
     "generate-cert": "bash scripts/generate-cert.sh",
     "setup-ssl": "bash scripts/setup-letsencrypt.sh",
     "setup-firewall": "bash scripts/setup-firewall.sh"

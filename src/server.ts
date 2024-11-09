@@ -8,8 +8,8 @@ import https from 'https';
 import cors from 'cors';
 
 const app = express();
-const HTTP_PORT = 8888;
-const HTTPS_PORT = 8443;
+const HTTP_PORT = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT) : 8080;
+const HTTPS_PORT = process.env.HTTPS_PORT ? parseInt(process.env.HTTPS_PORT) : 34252;
 const HOST = '0.0.0.0';
 
 // SSL证书配置
@@ -92,6 +92,11 @@ const loggerMiddleware = (req: express.Request, res: express.Response, next: exp
 
 app.use(loggerMiddleware);
 
+// 添加根路径处理
+app.get('/', (req, res) => {
+    res.send('hello!');
+});
+
 // 配置代理
 const proxy = createProxyMiddleware({
     target: 'https://chat.cloudapi.vip',
@@ -124,6 +129,7 @@ const proxy = createProxyMiddleware({
     }
 });
 
+// 只对 /v1 路径使用代理
 app.use('/v1', proxy);
 
 // 添加健康检查端点
