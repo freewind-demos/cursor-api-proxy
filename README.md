@@ -107,3 +107,7 @@
 ## License
 
 MIT
+
+## ubuntu上运行
+
+参看 [ubuntu.md](./ubuntu.md)
